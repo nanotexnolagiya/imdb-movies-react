@@ -1,0 +1,23 @@
+.card {
+  margin-bottom: 25px;
+}
+.movies .metas {
+  margin-top: 5px;
+}
+
+.movies .metas span {
+  margin-right: 10px;
+}
+.movies .metas span::before {
+  margin-right: 5px;
+}
+.movies .metas .fa-star-o {
+  cursor: pointer;
+}
+
+@media (min-width: 1280px) {
+  .movies .col-md-2-5 {
+    flex-basis: calc(100% / 5);
+    max-width: calc(100% / 5);
+  }
+}
