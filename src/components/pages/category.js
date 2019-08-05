@@ -2,8 +2,8 @@ import React, { Component } from 'react'
 import { Container, Row, Col, Button } from 'reactstrap'
 import { bindActionCreators } from 'redux'
 import { connect } from 'react-redux'
-import instance from '../../instance'
-import MovieList from '../movie-list'
+import MovieListItem from '../movie-list-item'
+import MovieServices from '../../services/movie-service'
 import {
   moviesRequested,
   moviesLoaded,
@@ -18,43 +18,28 @@ class Category extends Component {
     category: ''
   }
 
+  movieService = new MovieServices()
+
   fetchByCategory = async category => {
-    const { api_key, moviesRequested, moviesLoaded, moviesError } = this.props
+    const { moviesRequested, moviesLoaded, moviesError } = this.props
     const { page } = this.state
     try {
       moviesRequested()
-      const res = await instance.get(`/movie/${category}`, {
-        params: {
-          api_key: api_key,
-          language: 'en-US',
-          page
-        }
-      })
-      moviesLoaded(res.data)
+      const data = await this.movieService.getMovieByCategory(category, page)
+      moviesLoaded(data)
     } catch (error) {
       moviesError(error)
     }
   }
 
   fetchByCategoryMore = async () => {
-    const {
-      api_key,
-      moviesRequested,
-      moviesByCategoryMore,
-      moviesError
-    } = this.props
+    const { moviesRequested, moviesByCategoryMore, moviesError } = this.props
     const { page, category } = this.state
     const newPage = page + 1
     try {
       moviesRequested()
-      const res = await instance.get(`/movie/${category}`, {
-        params: {
-          api_key: api_key,
-          language: 'en-US',
-          page: newPage
-        }
-      })
-      moviesByCategoryMore(res.data)
+      const data = await this.movieService.getMovieByCategory(category, newPage)
+      moviesByCategoryMore(data)
       this.setState({
         page: newPage
       })
@@ -108,7 +93,11 @@ class Category extends Component {
       <Container fluid>
         <section>
           {loading && <Loader />}
-          <MovieList sm="6" md="2-5" movies={movies} />
+          <Row className="movies">
+            {movies.map(movie => (
+              <MovieListItem movie={movie} key={movie.id} sm="6" md="2-5" />
+            ))}
+          </Row>
           {pages >= page && (
             <Row className="text-center">
               <Col sm="12">
@@ -128,10 +117,11 @@ class Category extends Component {
   }
 }
 
-const mapStateToProps = ({
-  auth: { api_key },
-  movies: { movies, pages, loading }
-}) => ({ api_key, movies, pages, loading })
+const mapStateToProps = ({ movies: { movies, pages, loading } }) => ({
+  movies,
+  pages,
+  loading
+})
 
 const mapDispatchToProps = dispatch =>
   bindActionCreators(

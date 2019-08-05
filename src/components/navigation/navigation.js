@@ -1,7 +1,7 @@
 import React, { Component, Fragment } from 'react'
 import { connect } from 'react-redux'
 import { Link } from 'react-router-dom'
-import instance from '../../instance'
+import MovieServices from '../../services/movie-service'
 import {
   Navbar,
   NavbarBrand,
@@ -54,17 +54,15 @@ class Navigation extends Component {
     languages: ['uz', 'ru', 'en']
   }
 
+  movieService = new MovieServices()
+
   handleSearch = e => {
     console.log(e.target)
   }
 
   login = async () => {
-    const { api_key } = this.props
     try {
-      const res = await instance.get('/authentication/token/new', {
-        params: { api_key }
-      })
-      const data = res.data
+      const data = await this.movieService.getNewAuthToken()
       if (data.success) {
         window.location.href = `https://www.themoviedb.org/authenticate/${
           data.request_token
@@ -174,11 +172,8 @@ class Navigation extends Component {
   }
 }
 
-const mapStateToProps = ({
-  auth: { userLoggedIn, api_key },
-  user: { user }
-}) => {
-  return { userLoggedIn, api_key, user }
+const mapStateToProps = ({ auth: { userLoggedIn }, user: { user } }) => {
+  return { userLoggedIn, user }
 }
 
 export default connect(mapStateToProps)(Navigation)

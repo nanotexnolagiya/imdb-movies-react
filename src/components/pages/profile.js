@@ -1,7 +1,7 @@
 import React, { Component } from 'react'
 import { bindActionCreators } from 'redux'
 import { connect } from 'react-redux'
-import instance from '../../instance'
+import MovieServices from '../../services/movie-service'
 import {
   userSessionRequest,
   userSessionSuccess,
@@ -26,17 +26,14 @@ const queryStringParse = str => {
 }
 
 class Profile extends Component {
-  checkSession = async request_token => {
-    const { api_key, userSessionError, userSessionSuccess } = this.props
-    try {
-      const res = await instance.get('/authentication/session/new', {
-        params: {
-          api_key,
-          request_token
-        }
-      })
+  movieService = new MovieServices()
 
-      const { session_id } = res.data
+  checkSession = async request_token => {
+    const { userSessionError, userSessionSuccess } = this.props
+    try {
+      const { session_id } = await this.movieService.getNewAuthSession(
+        request_token
+      )
 
       localStorage.setItem('session_id', session_id)
       userSessionSuccess(session_id)
@@ -46,22 +43,11 @@ class Profile extends Component {
   }
 
   getUser = async () => {
-    const {
-      api_key,
-      session_id,
-      userRequested,
-      userSuccess,
-      userError
-    } = this.props
+    const { session_id, userRequested, userSuccess, userError } = this.props
     userRequested()
     try {
-      const res = await instance.get('/account', {
-        params: {
-          api_key,
-          session_id
-        }
-      })
-      userSuccess(res.data)
+      const data = await this.movieService.getAccount(session_id)
+      userSuccess(data)
     } catch (error) {
       userError(error)
     }
@@ -101,10 +87,9 @@ class Profile extends Component {
 }
 
 const mapStateToProps = ({
-  auth: { api_key, userLoggedIn, session_id },
+  auth: { userLoggedIn, session_id },
   user: { user, loading }
 }) => ({
-  api_key,
   loading,
   userLoggedIn,
   session_id,

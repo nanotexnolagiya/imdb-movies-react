@@ -7,7 +7,6 @@ import {
 } from '../constants'
 
 const initialState = {
-  api_key: '0205eaf82926ff1480160b868e96429e',
   userLoggedIn: false,
   session_id: localStorage.getItem('session_id') || null,
   loading: false,

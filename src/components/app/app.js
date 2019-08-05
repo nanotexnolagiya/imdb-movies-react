@@ -3,7 +3,7 @@ import { bindActionCreators } from 'redux'
 import { connect } from 'react-redux'
 import Navigation from '../navigation'
 import Router from '../../router'
-import instance from '../../instance'
+import MovieServices from '../../services/movie-service'
 import {
   userRequested,
   userError,
@@ -14,9 +14,9 @@ import {
 import './app.css'
 
 class App extends Component {
+  movieService = new MovieServices()
   getUser = async () => {
     const {
-      api_key,
       session_id,
       userRequested,
       userSuccess,
@@ -25,13 +25,8 @@ class App extends Component {
     } = this.props
     userRequested()
     try {
-      const res = await instance.get('/account', {
-        params: {
-          api_key,
-          session_id
-        }
-      })
-      userSuccess(res.data)
+      const data = await this.movieService.getAccount(session_id)
+      userSuccess(data)
       setUserLoggedIn(true)
     } catch (error) {
       userError(error)
@@ -51,11 +46,7 @@ class App extends Component {
   }
 }
 
-const mapStateToProps = ({
-  auth: { api_key, session_id },
-  user: { loading }
-}) => ({
-  api_key,
+const mapStateToProps = ({ auth: { session_id }, user: { loading } }) => ({
   loading,
   session_id
 })
