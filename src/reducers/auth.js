@@ -31,7 +31,8 @@ export default (state = initialState, { type, payload }) => {
       })
     case SET_USER_LOGGED_IN:
       return update(state, {
-        userLoggedIn: { $set: payload }
+        userLoggedIn: { $set: payload },
+        session_id: { $set: payload ? state.session_id : null }
       })
 
     default:

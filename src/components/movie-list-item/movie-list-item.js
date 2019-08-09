@@ -1,5 +1,5 @@
 import React from 'react'
-import { Card, CardImg, CardBody, Tooltip, Col } from 'reactstrap'
+import { Card, Tooltip, Col, OverlayTrigger } from 'react-bootstrap'
 import { Link } from 'react-router-dom'
 import './movie-list-item.css'
 
@@ -8,19 +8,25 @@ export default ({ movie, sm, md, lg, className }) => {
     return (
       <Col sm={sm} md={md} lg={lg} className={className}>
         <Card>
-          <CardImg
-            top
+          <Card.Img
+            variant="top"
             src={`https://image.tmdb.org/t/p/w370_and_h556_bestv2${
               movie.poster_path
             }`}
             alt={movie.title}
           />
-          <CardBody>
-            <Link
-              className="text-danger card-title"
-              id={`tooltip-${movie.id}`}
-              to={`/movie/${movie.id}`}
-            >{`${movie.title} (${movie.release_date.split('-')[0]})`}</Link>
+          <Card.Body>
+            <OverlayTrigger
+              placement="top"
+              overlay={<Tooltip id="tooltip-top">{movie.overview}</Tooltip>}
+            >
+              <Link
+                className="text-danger card-title"
+                id={`tooltip-${movie.id}`}
+                to={`/movie/${movie.id}`}
+              >{`${movie.title} (${movie.release_date.split('-')[0]})`}</Link>
+            </OverlayTrigger>
+
             <Tooltip placement="top" target={`tooltip-${movie.id}`}>
               {movie.overview}
             </Tooltip>
@@ -30,7 +36,7 @@ export default ({ movie, sm, md, lg, className }) => {
               </span>
               <span>votes: {movie.vote_count}</span>
             </div>
-          </CardBody>
+          </Card.Body>
         </Card>
       </Col>
     )

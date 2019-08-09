@@ -10,6 +10,10 @@
   color: #212529;
 }
 
+.navbar-brand a {
+  color: #ffffff;
+}
+
 .form-inline {
   display: -ms-flexbox;
   display: -webkit-box;

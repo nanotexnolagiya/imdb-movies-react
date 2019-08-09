@@ -1,40 +1,13 @@
 import React, { Component, Fragment } from 'react'
 import { connect } from 'react-redux'
-import { Link } from 'react-router-dom'
-import MovieServices from '../../services/movie-service'
-import {
-  Navbar,
-  NavbarBrand,
-  NavbarToggler,
-  Collapse,
-  Nav,
-  NavItem,
-  NavLink,
-  UncontrolledDropdown,
-  DropdownItem,
-  DropdownToggle,
-  DropdownMenu,
-  Form,
-  Input
-} from 'reactstrap'
+import { bindActionCreators, compose } from 'redux'
+import { Link, withRouter } from 'react-router-dom'
+import { withMovieService } from '../hoc'
+import { Navbar, Nav, Form, FormControl, NavDropdown } from 'react-bootstrap'
+import debounce from '../../utils/debounce'
+import { moviesRequested, moviesError, moviesSearch } from '../../actions/movie'
+import { setUserLoggedIn } from '../../actions/user'
 import './navigation.css'
-
-function debounce(f, ms) {
-  let timer = null
-
-  return function(...args) {
-    const onComplete = () => {
-      f.apply(this, args)
-      timer = null
-    }
-
-    if (timer) {
-      clearTimeout(timer)
-    }
-
-    timer = setTimeout(onComplete, ms)
-  }
-}
 
 class Navigation extends Component {
   state = {
@@ -54,15 +27,52 @@ class Navigation extends Component {
     languages: ['uz', 'ru', 'en']
   }
 
-  movieService = new MovieServices()
-
-  handleSearch = e => {
-    console.log(e.target)
+  searchReset = () => {
+    const { moviesSearch } = this.props
+    this.setState({
+      showSearchWrap: false
+    })
+    document.getElementById('nav_search_input').value = ''
+    moviesSearch([])
   }
+
+  closeSearch = () => {
+    this.setState({
+      showSearchWrap: false
+    })
+  }
+
+  submitSearch = e => {
+    e.preventDefault()
+    const searchText = document.getElementById('nav_search_input').value
+    const { history } = this.props
+    this.searchReset()
+    history.push(`/search/${searchText}`)
+  }
+
+  handleSearch = debounce(async () => {
+    const {
+      moviesRequested,
+      moviesError,
+      moviesSearch,
+      movieService
+    } = this.props
+    try {
+      moviesRequested()
+      const searchText = document.getElementById('nav_search_input').value
+      const data = await movieService.searchMovie(searchText)
+      moviesSearch(data.results)
+      this.setState({
+        showSearchWrap: true
+      })
+    } catch (error) {
+      moviesError(error)
+    }
+  }, 1000)
 
   login = async () => {
     try {
-      const data = await this.movieService.getNewAuthToken()
+      const data = await this.props.movieService.getNewAuthToken()
       if (data.success) {
         window.location.href = `https://www.themoviedb.org/authenticate/${
           data.request_token
@@ -72,108 +82,144 @@ class Navigation extends Component {
     } catch (error) {}
   }
 
+  logout = () => {
+    localStorage.clear()
+    const { setUserLoggedIn, history } = this.props
+    setUserLoggedIn(false)
+    history.push('/')
+  }
+
   render() {
     const { menus, user_menus, languages, showSearchWrap } = this.state
-    const { userLoggedIn, user } = this.props
-    console.log(user)
+    const { userLoggedIn, user, searchMovies } = this.props
     return (
       <Fragment>
         <div className="navigation">
-          <Navbar color="dark" dark expand="md">
-            <NavbarBrand href="/">Movies</NavbarBrand>
+          <Navbar sticky="top" bg="dark" expand="md">
+            <Navbar.Brand>
+              <Link to="/">Movies</Link>
+            </Navbar.Brand>
 
-            <NavbarToggler target="nav-collapse" />
+            <Navbar.Toggle aria-controls="basic-navbar-nav" />
 
-            <Collapse id="nav-collapse" navbar>
-              <Nav navbar>
+            <Navbar.Collapse id="nav-collapse">
+              <Nav>
                 {menus.map(menu => {
                   return (
-                    <NavItem key={menu.url}>
+                    <Nav.Item key={menu.url}>
                       <Link className="nav-link" to={menu.url}>
                         {menu.name}
                       </Link>
-                    </NavItem>
+                    </Nav.Item>
                   )
                 })}
               </Nav>
               <Nav className="ml-auto" navbar>
-                <Form className="search-wrap form-inline">
-                  <Input
-                    bsSize="sm"
+                <Form
+                  className="search-wrap"
+                  inline
+                  onSubmit={this.submitSearch}
+                >
+                  <FormControl
+                    type="text"
+                    size="sm"
                     className="mr-sm-2 search-input"
+                    id="nav_search_input"
                     placeholder="Search"
-                    onKeyPress={debounce(this.handleSearch, 1000)}
+                    onKeyPress={debounce(this.handleSearch, 1500)}
+                    autoComplete="off"
                   />
-                  {showSearchWrap && (
+                  {showSearchWrap && searchMovies ? (
                     <div className="search-results">
-                      <div
-                        className="search-results-item"
-                        v-for="item in searchMovies"
-                      >
-                        <h4 className="search-results-title">Movie</h4>
-                        <div className="search-results-metas">
-                          <span className="fa fa-star">5</span>
+                      {searchMovies.map(movie => (
+                        <div key={movie.id} className="search-results-item">
+                          <h4 className="search-results-title">
+                            {movie.title}
+                          </h4>
+                          <div className="search-results-metas">
+                            <span className="fa fa-star">
+                              {movie.vote_average}
+                            </span>
+                          </div>
+                          <Link
+                            to={`/movie/${movie.id}`}
+                            className="search-results-link"
+                            onClick={this.searchReset}
+                          />
                         </div>
-                        <Link href="#" className="search-results-link" />
-                      </div>
+                      ))}
                     </div>
+                  ) : (
+                    ''
                   )}
                 </Form>
-                <UncontrolledDropdown nav inNavbar>
-                  <DropdownToggle nav caret>
-                    <span className="fa fa-globe" />
-                  </DropdownToggle>
-                  <DropdownMenu right>
-                    {languages.map((language, idx) => {
-                      return (
-                        <DropdownItem href="#" key={idx}>
-                          {language}
-                        </DropdownItem>
-                      )
-                    })}
-                  </DropdownMenu>
-                </UncontrolledDropdown>
+                <NavDropdown title={<span className="fa fa-globe" />}>
+                  {languages.map((language, idx) => {
+                    return (
+                      <NavDropdown.Item href="#" key={idx}>
+                        {language}
+                      </NavDropdown.Item>
+                    )
+                  })}
+                </NavDropdown>
                 {!userLoggedIn && (
-                  <NavItem>
-                    <NavLink href="#" onClick={this.login}>
+                  <Nav.Item>
+                    <Nav.Link href="#" onClick={this.login}>
                       Login
-                    </NavLink>
-                  </NavItem>
+                    </Nav.Link>
+                  </Nav.Item>
                 )}
                 {userLoggedIn && (
-                  <UncontrolledDropdown nav inNavbar>
-                    <DropdownToggle nav caret>
-                      {user ? user.username : ''}
-                    </DropdownToggle>
-                    <DropdownMenu right>
-                      {user_menus.map(user_menu => {
-                        return (
-                          <Link
-                            className="dropdown-item"
-                            key={user_menu.url}
-                            to={user_menu.url}
-                          >
-                            {user_menu.name}
-                          </Link>
-                        )
-                      })}
-                      <DropdownItem divider />
-                      <DropdownItem>Logout</DropdownItem>
-                    </DropdownMenu>
-                  </UncontrolledDropdown>
+                  <NavDropdown title={user ? user.username : ''}>
+                    {user_menus.map((user_menu, idx) => {
+                      return (
+                        <Link
+                          className="dropdown-item"
+                          key={user_menu.url}
+                          to={user_menu.url}
+                        >
+                          {user_menu.name}
+                        </Link>
+                      )
+                    })}
+                  </NavDropdown>
                 )}
               </Nav>
-            </Collapse>
+            </Navbar.Collapse>
           </Navbar>
         </div>
-        <div className="search-backdrop" />
+        {showSearchWrap && (
+          <div className="search-backdrop" onClick={this.closeSearch} />
+        )}
       </Fragment>
     )
   }
 }
 
-const mapStateToProps = ({ auth: { userLoggedIn }, user: { user } }) => {
-  return { userLoggedIn, user }
+const mapStateToProps = ({
+  auth: { userLoggedIn },
+  user: { user },
+  movies: { searchMovies }
+}) => {
+  return { userLoggedIn, user, searchMovies }
 }
 
-export default connect(mapStateToProps)(Navigation)
+const mapDispatchToProps = dispatch =>
+  bindActionCreators(
+    {
+      moviesError,
+      moviesRequested,
+      moviesSearch,
+      setUserLoggedIn
+    },
+    dispatch
+  )
+
+export default compose(
+  withMovieService(),
+  withRouter,
+  connect(
+    mapStateToProps,
+    mapDispatchToProps
+  )
+)(Navigation)

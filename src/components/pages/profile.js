@@ -1,7 +1,8 @@
 import React, { Component } from 'react'
-import { bindActionCreators } from 'redux'
+import { bindActionCreators, compose } from 'redux'
 import { connect } from 'react-redux'
-import MovieServices from '../../services/movie-service'
+import { withMovieService } from '../hoc'
+import queryStringParse from '../../utils/queryStringParse'
 import {
   userSessionRequest,
   userSessionSuccess,
@@ -10,43 +11,28 @@ import {
   userRequested,
   userSuccess,
   userError
-} from '../../actions'
+} from '../../actions/user'
 import Loader from '../loader'
 
-const queryStringParse = str => {
-  const params = {}
-  str
-    .substr(1)
-    .split('&')
-    .forEach(param => {
-      param = param.split('=')
-      params[param[0]] = param[1]
-    })
-  return params
-}
-
 class Profile extends Component {
-  movieService = new MovieServices()
-
   checkSession = async request_token => {
-    const { userSessionError, userSessionSuccess } = this.props
+    const { userSessionError, userSessionSuccess, movieService } = this.props
     try {
-      const { session_id } = await this.movieService.getNewAuthSession(
-        request_token
-      )
+      const { session_id } = await movieService.getNewAuthSession(request_token)
 
       localStorage.setItem('session_id', session_id)
       userSessionSuccess(session_id)
+      return session_id
     } catch (error) {
       userSessionError(error)
     }
   }
 
-  getUser = async () => {
-    const { session_id, userRequested, userSuccess, userError } = this.props
+  getUser = async session_id => {
+    const { userRequested, userSuccess, userError, movieService } = this.props
     userRequested()
     try {
-      const data = await this.movieService.getAccount(session_id)
+      const data = await movieService.getAccount(session_id)
       userSuccess(data)
     } catch (error) {
       userError(error)
@@ -58,17 +44,21 @@ class Profile extends Component {
       location,
       history,
       userSessionRequest,
-      setUserLoggedIn
+      setUserLoggedIn,
+      session_id
     } = this.props
     const params = queryStringParse(location.search)
     if (Object.keys(params).includes('approved')) {
       userSessionRequest()
-      this.checkSession(params.request_token)
-      this.getUser()
+      const $this = this
+      this.checkSession(params.request_token).then(session_id =>
+        $this.getUser(session_id)
+      )
       setUserLoggedIn(true)
     } else if (Object.keys(params).includes('denied')) {
       setUserLoggedIn(false)
-    } else if (this.session_id) {
+      history.push('/')
+    } else if (session_id) {
       setUserLoggedIn(true)
     } else {
       history.push('/')
@@ -110,7 +100,10 @@ const mapDispatchToProps = dispatch =>
     dispatch
   )
 
-export default connect(
-  mapStateToProps,
-  mapDispatchToProps
+export default compose(
+  withMovieService(),
+  connect(
+    mapStateToProps,
+    mapDispatchToProps
+  )
 )(Profile)

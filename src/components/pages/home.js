@@ -1,6 +1,6 @@
 import React, { Component } from 'react'
-import { Container, Row } from 'reactstrap'
-import { bindActionCreators } from 'redux'
+import { Container, Row } from 'react-bootstrap'
+import { bindActionCreators, compose } from 'redux'
 import { connect } from 'react-redux'
 import MovieListItem from '../movie-list-item'
 import {
@@ -8,19 +8,17 @@ import {
   moviesError,
   moviesComplate,
   moviesByCategory
-} from '../../actions'
+} from '../../actions/movie'
 import Loader from '../loader'
-import MovieServices from '../../services/movie-service'
+import { withMovieService } from '../hoc'
 
 class Home extends Component {
-  movieService = new MovieServices()
   fetchMovie = async (category, limit) => {
-    const { moviesError, moviesByCategory } = this.props
+    const { moviesError, moviesByCategory, movieService } = this.props
     try {
-      const data = await this.movieService.getMovieByCategory(category)
+      const data = await movieService.getMovieByCategory(category)
       moviesByCategory({ category, results: data.results.splice(0, limit) })
     } catch (error) {
-      console.log(error)
       moviesError(error)
     }
   }
@@ -103,8 +101,8 @@ const mapStateToProps = ({
   return { popular, top_rated, upcoming, now_playing, loading }
 }
 
-const mapDispatchToProps = dispatch => {
-  return bindActionCreators(
+const mapDispatchToProps = dispatch =>
+  bindActionCreators(
     {
       moviesError,
       moviesRequested,
@@ -113,9 +111,11 @@ const mapDispatchToProps = dispatch => {
     },
     dispatch
   )
-}
 
-export default connect(
-  mapStateToProps,
-  mapDispatchToProps
+export default compose(
+  withMovieService(),
+  connect(
+    mapStateToProps,
+    mapDispatchToProps
+  )
 )(Home)

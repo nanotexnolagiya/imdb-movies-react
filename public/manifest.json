@@ -1,6 +1,8 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "name": "Movie",
+  "short_name": "Movie",
+  "theme_color": "#343a40",
+  "background_color": "#000000",
   "icons": [
     {
       "src": "favicon.ico",
@@ -9,7 +11,5 @@
     }
   ],
   "start_url": ".",
-  "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "display": "standalone"
 }

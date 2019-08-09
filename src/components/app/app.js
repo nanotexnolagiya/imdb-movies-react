@@ -1,31 +1,31 @@
 import React, { Component } from 'react'
-import { bindActionCreators } from 'redux'
+import { bindActionCreators, compose } from 'redux'
 import { connect } from 'react-redux'
 import Navigation from '../navigation'
 import Router from '../../router'
-import MovieServices from '../../services/movie-service'
+import { withMovieService } from '../hoc'
 import {
   userRequested,
   userError,
   userSuccess,
   setUserLoggedIn
-} from '../../actions'
+} from '../../actions/user'
 
 import './app.css'
 
 class App extends Component {
-  movieService = new MovieServices()
   getUser = async () => {
     const {
       session_id,
       userRequested,
       userSuccess,
       userError,
-      setUserLoggedIn
+      setUserLoggedIn,
+      movieService
     } = this.props
     userRequested()
     try {
-      const data = await this.movieService.getAccount(session_id)
+      const data = await movieService.getAccount(session_id)
       userSuccess(data)
       setUserLoggedIn(true)
     } catch (error) {
@@ -62,7 +62,10 @@ const mapDispatchToProps = dispatch =>
     dispatch
   )
 
-export default connect(
-  mapStateToProps,
-  mapDispatchToProps
+export default compose(
+  withMovieService(),
+  connect(
+    mapStateToProps,
+    mapDispatchToProps
+  )
 )(App)

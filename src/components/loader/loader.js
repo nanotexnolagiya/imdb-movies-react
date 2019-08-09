@@ -1,11 +1,11 @@
 import React from 'react'
-import { Spinner } from 'reactstrap'
+import { Spinner } from 'react-bootstrap'
 import './loader.css'
 
 export default () => {
   return (
     <div className="preloader text-center d-flex justify-content-center align-items-center">
-      <Spinner type="grow" color="success" />
+      <Spinner animation="grow" variant="success" />
     </div>
   )
 }

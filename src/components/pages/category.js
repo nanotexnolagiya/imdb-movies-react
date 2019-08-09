@@ -1,15 +1,15 @@
 import React, { Component } from 'react'
-import { Container, Row, Col, Button } from 'reactstrap'
-import { bindActionCreators } from 'redux'
+import { Container, Row, Col, Button } from 'react-bootstrap'
+import { bindActionCreators, compose } from 'redux'
+import { withMovieService } from '../hoc'
 import { connect } from 'react-redux'
 import MovieListItem from '../movie-list-item'
-import MovieServices from '../../services/movie-service'
 import {
   moviesRequested,
   moviesLoaded,
   moviesError,
   moviesByCategoryMore
-} from '../../actions'
+} from '../../actions/movie'
 import Loader from '../loader'
 
 class Category extends Component {
@@ -18,14 +18,17 @@ class Category extends Component {
     category: ''
   }
 
-  movieService = new MovieServices()
-
   fetchByCategory = async category => {
-    const { moviesRequested, moviesLoaded, moviesError } = this.props
+    const {
+      moviesRequested,
+      moviesLoaded,
+      moviesError,
+      movieService
+    } = this.props
     const { page } = this.state
     try {
       moviesRequested()
-      const data = await this.movieService.getMovieByCategory(category, page)
+      const data = await movieService.getMovieByCategory(category, page)
       moviesLoaded(data)
     } catch (error) {
       moviesError(error)
@@ -33,12 +36,17 @@ class Category extends Component {
   }
 
   fetchByCategoryMore = async () => {
-    const { moviesRequested, moviesByCategoryMore, moviesError } = this.props
+    const {
+      moviesRequested,
+      moviesByCategoryMore,
+      moviesError,
+      movieService
+    } = this.props
     const { page, category } = this.state
     const newPage = page + 1
     try {
       moviesRequested()
-      const data = await this.movieService.getMovieByCategory(category, newPage)
+      const data = await movieService.getMovieByCategory(category, newPage)
       moviesByCategoryMore(data)
       this.setState({
         page: newPage
@@ -102,8 +110,7 @@ class Category extends Component {
             <Row className="text-center">
               <Col sm="12">
                 <Button
-                  outline
-                  color="danger"
+                  variant="outline-danger"
                   onClick={this.fetchByCategoryMore}
                 >
                   More
@@ -134,7 +141,10 @@ const mapDispatchToProps = dispatch =>
     dispatch
   )
 
-export default connect(
-  mapStateToProps,
-  mapDispatchToProps
+export default compose(
+  withMovieService(),
+  connect(
+    mapStateToProps,
+    mapDispatchToProps
+  )
 )(Category)

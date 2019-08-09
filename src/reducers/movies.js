@@ -5,7 +5,9 @@ import {
   FETCH_MOVIES_ERROR,
   FETCH_MOVIES_COMPLETE,
   FETCH_MOVIES_BY_CATEGORY,
-  FETCH_MOVIES_BY_CATEGORY_MORE
+  FETCH_MOVIES_BY_CATEGORY_MORE,
+  FETCH_MOVIE_SUCCESS,
+  FETCH_MOVIE_SEARCH
 } from '../constants'
 
 const initialState = {
@@ -36,10 +38,17 @@ export default (state = initialState, { type, payload }) => {
         loading: { $set: false }
       })
 
+    case FETCH_MOVIE_SEARCH:
+      return update(state, {
+        searchMovies: { $set: payload },
+        loading: { $set: false }
+      })
+
     case FETCH_MOVIES_BY_CATEGORY:
       return update(state, {
         [payload.category]: { $set: payload.results }
       })
+
     case FETCH_MOVIES_BY_CATEGORY_MORE:
       return update(state, {
         movies: { $push: payload.results },
@@ -47,13 +56,21 @@ export default (state = initialState, { type, payload }) => {
         results: { $set: payload.total_results },
         loading: { $set: false }
       })
+
     case FETCH_MOVIES_ERROR:
       return update(state, {
         error: { $set: payload },
         loading: { $set: false }
       })
+
     case FETCH_MOVIES_COMPLETE:
       return update(state, {
+        loading: { $set: false }
+      })
+
+    case FETCH_MOVIE_SUCCESS:
+      return update(state, {
+        movie: { $set: payload },
         loading: { $set: false }
       })
 
